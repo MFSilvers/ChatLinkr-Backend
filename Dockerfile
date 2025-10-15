@@ -28,7 +28,6 @@ RUN chown -R www-data:www-data /app \
 
 # Configure Apache
 RUN a2enmod rewrite
-COPY .htaccess /app/.htaccess
 
 # Expose port
 EXPOSE 80
