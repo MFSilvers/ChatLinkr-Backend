@@ -157,3 +157,4 @@ switch ($method) {
     default:
         sendResponse(405, ['error' => 'Metodo non consentito']);
 }
+// Force deploy Wed Oct 15 23:15:07 CEST 2025
