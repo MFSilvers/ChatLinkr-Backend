@@ -4,6 +4,24 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Set error handler to catch fatal errors
+set_error_handler(function($severity, $message, $file, $line) {
+    if (error_reporting() & $severity) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Internal server error: ' . $message]);
+        exit();
+    }
+});
+
+// Set exception handler
+set_exception_handler(function($exception) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Uncaught exception: ' . $exception->getMessage()]);
+    exit();
+});
+
 // Set CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
