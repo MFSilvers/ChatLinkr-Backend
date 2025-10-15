@@ -1,7 +1,26 @@
 FROM php:8.4-apache
 
+# Install PostgreSQL extensions and required tools
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    git \
+    unzip \
+    zip \
+    && docker-php-ext-install pdo pdo_pgsql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Set working directory
 WORKDIR /var/www/html
+
+# Copy composer files
+COPY composer.json ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
 # Copy application files
 COPY . .
