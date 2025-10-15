@@ -1,9 +1,12 @@
 FROM php:8.4-apache
 
-# Install PostgreSQL extensions
+# Install PostgreSQL extensions and required tools
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql \
+    git \
+    unzip \
+    zip \
+    && docker-php-ext-install pdo pdo_pgsql zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
