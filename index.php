@@ -4,24 +4,6 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Set error handler to catch fatal errors
-set_error_handler(function($severity, $message, $file, $line) {
-    if (error_reporting() & $severity) {
-        http_response_code(500);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Internal server error: ' . $message]);
-        exit();
-    }
-});
-
-// Set exception handler
-set_exception_handler(function($exception) {
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Uncaught exception: ' . $exception->getMessage()]);
-    exit();
-});
-
 // Set CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -79,20 +61,12 @@ if (strpos($path, '/api/') === 0) {
             break;
     }
 } else {
-    // Default response for root path with debugging info
-    $debug_info = [
+    // Default response for root path
+    echo json_encode([
         'name' => 'ChatLinkr API',
         'version' => '1.0.0',
         'status' => 'running',
-        'environment' => [
-            'DB_HOST' => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ? 'SET' : 'NOT SET',
-            'DB_PORT' => $_ENV['DB_PORT'] ?? getenv('DB_PORT') ? 'SET' : 'NOT SET',
-            'DB_NAME' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ? 'SET' : 'NOT SET',
-            'DB_USER' => $_ENV['DB_USER'] ?? getenv('DB_USER') ? 'SET' : 'NOT SET',
-            'DB_PASS' => $_ENV['DB_PASS'] ?? getenv('DB_PASS') ? 'SET' : 'NOT SET',
-            'DB_SSLMODE' => $_ENV['DB_SSLMODE'] ?? getenv('DB_SSLMODE') ? 'SET' : 'NOT SET',
-            'SESSION_SECRET' => $_ENV['SESSION_SECRET'] ?? getenv('SESSION_SECRET') ? 'SET' : 'NOT SET'
-        ],
+        'message' => 'Backend is working!',
         'endpoints' => [
             'POST /api/auth.php?action=register' => 'User registration',
             'POST /api/auth.php?action=login' => 'User login',
@@ -103,9 +77,8 @@ if (strpos($path, '/api/') === 0) {
             'POST /api/messages.php' => 'Send message',
             'GET /api/users.php' => 'Get users list',
             'GET /api/users.php?search=query' => 'Search users',
-            'POST /api/update_status.php' => 'Update user status'
+            'POST /api/update_status.php' => 'Update user status',
+            'GET /api/test_db.php' => 'Test database connection'
         ]
-    ];
-    
-    echo json_encode($debug_info, JSON_PRETTY_PRINT);
+    ]);
 }
