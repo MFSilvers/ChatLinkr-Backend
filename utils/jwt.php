@@ -1,20 +1,11 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
-use Dotenv\Dotenv;
-
 class JWT {
     private static $secret_key = null;
     
     private static function getSecretKey() {
         if (self::$secret_key === null) {
-            // Load environment variables if not already loaded
-            if (!isset($_ENV['SESSION_SECRET'])) {
-                $dotenv = Dotenv::createImmutable(__DIR__ . '/../..');
-                $dotenv->load();
-            }
-            
+            // Get secret key from environment variables (Railway)
             self::$secret_key = $_ENV['SESSION_SECRET'] ?? getenv('SESSION_SECRET');
             
             if (!self::$secret_key) {

@@ -1,18 +1,10 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
-use Dotenv\Dotenv;
-
 class Database {
     private $conn;
     
     public function __construct() {
-        // Load environment variables from .env file
-        $dotenv = Dotenv::createImmutable(__DIR__ . '/../..');
-        $dotenv->load();
-        
-        // Get database configuration from environment variables
+        // Get database configuration from environment variables (Railway)
         $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST');
         $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? 5432;
         $dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME');
@@ -22,7 +14,7 @@ class Database {
         
         // Validate required parameters
         if (!$host || !$dbname || !$user) {
-            throw new Exception("Database configuration incomplete. Please set DB_HOST, DB_NAME, and DB_USER in .env file");
+            throw new Exception("Database configuration incomplete. Please set DB_HOST, DB_NAME, and DB_USER environment variables");
         }
         
         try {
