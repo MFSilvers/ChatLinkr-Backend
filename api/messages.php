@@ -38,6 +38,9 @@ if (!$payload) {
 
 $user_id = $payload['user_id'];
 
+// Log per debugging
+error_log("User ID from token: " . $user_id);
+
 switch ($method) {
     case 'GET':
         $action = $_GET['action'] ?? '';
@@ -132,6 +135,9 @@ switch ($method) {
             $stmt = $db->prepare("INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?) RETURNING id, created_at");
             $stmt->execute([$user_id, $receiver_id, $message]);
             $result = $stmt->fetch();
+            
+            // Log per debugging
+            error_log("Message saved - sender_id: " . $user_id . ", receiver_id: " . $receiver_id . ", message: " . $message);
             
             sendResponse(201, [
                 'success' => true,
