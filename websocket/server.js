@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 require('dotenv').config();
 
-const PORT = process.env.WEBSOCKET_PORT || 3001;
+const PORT = process.env.PORT || 8080;
 const SECRET_KEY = process.env.SESSION_SECRET;
 
 // Validate required environment variables
@@ -38,16 +38,71 @@ const server = http.createServer((req, res) => {
       websocket: 'active',
       endpoints: {
         'GET /': 'Health check',
-        'WebSocket': 'Real-time messaging'
+        'WebSocket': 'Real-time messaging',
+        'API': 'PHP backend via proxy'
       }
     }));
     return;
   }
 
-  // For other API endpoints, we'll need to proxy to PHP or implement them in Node.js
-  // For now, return a simple response
+  // Proxy API requests to PHP backend
+  if (req.url.startsWith('/api/')) {
+    const phpPort = 8081; // PHP backend on internal port
+    
+    console.log(`🔄 Proxying ${req.method} ${req.url} to PHP backend`);
+    
+    // Copy headers but remove problematic ones
+    const headers = { ...req.headers };
+    delete headers.host; // Remove host header to avoid conflicts
+    
+    const options = {
+      hostname: 'localhost',
+      port: phpPort,
+      path: req.url,
+      method: req.method,
+      headers: headers,
+      timeout: 10000 // 10 second timeout
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+      console.log(`✅ Proxy response: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error(`❌ Proxy error for ${req.method} ${req.url}:`, err.message);
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Internal server error', details: err.message }));
+    });
+
+    proxyReq.on('timeout', () => {
+      console.error(`⏰ Proxy timeout for ${req.method} ${req.url}`);
+      proxyReq.destroy();
+      res.writeHead(504);
+      res.end(JSON.stringify({ error: 'Gateway timeout' }));
+    });
+
+    // Handle request body for POST/PUT requests
+    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        proxyReq.write(body);
+        proxyReq.end();
+      });
+    } else {
+      // For GET, DELETE, etc., pipe directly
+      req.pipe(proxyReq);
+    }
+    return;
+  }
+
+  // For other endpoints, return 404
   res.writeHead(404);
-  res.end(JSON.stringify({ error: 'API endpoint not found' }));
+  res.end(JSON.stringify({ error: 'Endpoint not found' }));
 });
 
 const io = new Server(server, {
@@ -180,6 +235,33 @@ io.on('connection', (socket) => {
   });
 });
 
+// Health check function for PHP backend
+function checkPHPHealth() {
+  const healthReq = http.request({
+    hostname: 'localhost',
+    port: 8081,
+    path: '/',
+    method: 'GET',
+    timeout: 5000
+  }, (res) => {
+    console.log(`✅ PHP backend health check: ${res.statusCode}`);
+  });
+  
+  healthReq.on('error', (err) => {
+    console.error(`❌ PHP backend health check failed:`, err.message);
+  });
+  
+  healthReq.on('timeout', () => {
+    console.error(`⏰ PHP backend health check timeout`);
+    healthReq.destroy();
+  });
+  
+  healthReq.end();
+}
+
 server.listen(PORT, () => {
   console.log(`WebSocket server running on port ${PORT}`);
+  
+  // Check PHP backend health after 5 seconds
+  setTimeout(checkPHPHealth, 5000);
 });
