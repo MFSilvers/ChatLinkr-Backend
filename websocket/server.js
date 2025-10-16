@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { Client } = require('pg');
 require('dotenv').config();
 
-const PORT = process.env.WEBSOCKET_PORT || process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 const SECRET_KEY = process.env.SESSION_SECRET;
 
 // Validate required environment variables
