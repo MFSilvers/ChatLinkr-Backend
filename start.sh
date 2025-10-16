@@ -4,13 +4,8 @@
 
 echo "🚀 Avvio ChatLinkr Backend + WebSocket Server..."
 
-# Installa dipendenze WebSocket se necessario
-if [ ! -d "websocket/node_modules" ]; then
-    echo "📦 Installazione dipendenze WebSocket..."
-    cd websocket
-    npm install --silent
-    cd ..
-fi
+# Le dipendenze Node.js sono già installate da Railway
+echo "📦 Dipendenze Node.js già installate da Railway"
 
 # Avvia il WebSocket server in background
 echo "📡 Avvio WebSocket server sulla porta ${WEBSOCKET_PORT:-3001}..."
