@@ -13,7 +13,43 @@ if (!SECRET_KEY) {
   process.exit(1);
 }
 
-const server = http.createServer();
+const server = http.createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Content-Type', 'application/json');
+
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Health check endpoint
+  if (req.url === '/' && req.method === 'GET') {
+    res.writeHead(200);
+    res.end(JSON.stringify({
+      name: 'ChatLinkr API',
+      version: '1.0.0',
+      status: 'running',
+      websocket: 'active',
+      endpoints: {
+        'GET /': 'Health check',
+        'WebSocket': 'Real-time messaging'
+      }
+    }));
+    return;
+  }
+
+  // For other API endpoints, we'll need to proxy to PHP or implement them in Node.js
+  // For now, return a simple response
+  res.writeHead(404);
+  res.end(JSON.stringify({ error: 'API endpoint not found' }));
+});
+
 const io = new Server(server, {
   cors: {
     origin: '*',
