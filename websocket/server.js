@@ -114,12 +114,43 @@ const io = new Server(server, {
 
 const users = new Map();
 
+function getDatabaseConfig() {
+  // Try DATABASE_URL first (for compatibility)
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL
+    };
+  }
+  
+  // Otherwise use individual environment variables (Railway style)
+  const host = process.env.DB_HOST || process.env.DATABASE_HOST;
+  const port = process.env.DB_PORT || process.env.DATABASE_PORT || 5432;
+  const database = process.env.DB_NAME || process.env.DATABASE_NAME || process.env.DB_DATABASE;
+  const user = process.env.DB_USER || process.env.DATABASE_USER;
+  const password = process.env.DB_PASS || process.env.DB_PASSWORD || process.env.DATABASE_PASS;
+  const sslmode = process.env.DB_SSLMODE || process.env.DATABASE_SSLMODE || 'require';
+  
+  if (!host || !database || !user) {
+    throw new Error('Database configuration incomplete. Please set DB_HOST, DB_NAME, and DB_USER environment variables');
+  }
+  
+  return {
+    host: host,
+    port: parseInt(port),
+    database: database,
+    user: user,
+    password: password,
+    ssl: sslmode !== 'disable' ? { rejectUnauthorized: false } : false
+  };
+}
+
 async function updateUserStatus(userId, isOnline) {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL
-  });
+  let client;
   
   try {
+    const config = getDatabaseConfig();
+    client = new Client(config);
+    
     await client.connect();
     await client.query(
       'UPDATE users SET is_online = $1, last_seen = CURRENT_TIMESTAMP WHERE id = $2',
@@ -128,7 +159,9 @@ async function updateUserStatus(userId, isOnline) {
   } catch (err) {
     console.error('Error updating user status:', err);
   } finally {
-    await client.end();
+    if (client) {
+      await client.end();
+    }
   }
 }
 
