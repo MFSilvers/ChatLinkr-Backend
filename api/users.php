@@ -78,6 +78,55 @@ switch ($method) {
         }
         break;
         
+    case 'PUT':
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['username'])) {
+                sendResponse(400, ['error' => 'Username richiesto']);
+            }
+            
+            $new_username = trim($input['username']);
+            
+            // Validazione username
+            if (strlen($new_username) < 3) {
+                sendResponse(400, ['error' => 'Username deve essere di almeno 3 caratteri']);
+            }
+            
+            if (strlen($new_username) > 20) {
+                sendResponse(400, ['error' => 'Username non può superare i 20 caratteri']);
+            }
+            
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $new_username)) {
+                sendResponse(400, ['error' => 'Username può contenere solo lettere, numeri e underscore']);
+            }
+            
+            // Controlla se l'username è già in uso
+            $stmt = $db->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
+            $stmt->execute([$new_username, $user_id]);
+            
+            if ($stmt->fetch()) {
+                sendResponse(409, ['error' => 'Username già in uso']);
+            }
+            
+            // Aggiorna l'username
+            $stmt = $db->prepare("UPDATE users SET username = ? WHERE id = ?");
+            $stmt->execute([$new_username, $user_id]);
+            
+            if ($stmt->rowCount() > 0) {
+                sendResponse(200, [
+                    'message' => 'Username aggiornato con successo',
+                    'username' => $new_username
+                ]);
+            } else {
+                sendResponse(500, ['error' => 'Errore durante l\'aggiornamento']);
+            }
+            
+        } catch (PDOException $e) {
+            sendResponse(500, ['error' => 'Errore del database']);
+        }
+        break;
+        
     default:
         sendResponse(405, ['error' => 'Metodo non consentito']);
 }
